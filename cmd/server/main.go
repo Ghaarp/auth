@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 
@@ -14,7 +15,7 @@ import (
 
 const (
 	address = "localhost:"
-	port    = "3000"
+	port    = 50051
 )
 
 type server struct {
@@ -47,7 +48,7 @@ func (serv *server) Delete(context context.Context, in *generated.DeleteRequest)
 
 func main() {
 
-	listener, err := net.Listen("tcp", address+port)
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 
 	if err != nil {
 		log.Fatal(err)
@@ -58,7 +59,7 @@ func main() {
 	a := &server{}
 	generated.RegisterAuthV1Server(serverObj, a)
 
-	log.Printf("Server started om %v", listener.Addr())
+	log.Printf("Server started on %v", listener.Addr())
 
 	if err := serverObj.Serve(listener); err != nil {
 		log.Fatal(err)

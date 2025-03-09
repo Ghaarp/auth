@@ -19,8 +19,8 @@ jobs:
     steps:
       - name: Debug secrets
         run: |
-        echo "Username: ${{ secrets.REGISTRY_USERNAME }}"
-        echo "Password: ${{ secrets.REGISTRY_PASSWORD }}"
+          echo "Username: ${{ secrets.REGISTRY_USERNAME }}"
+          echo "Password: ${{ secrets.REGISTRY_PASSWORD }}"
 
       - name: Checkout master
         uses: actions/checkout@v3

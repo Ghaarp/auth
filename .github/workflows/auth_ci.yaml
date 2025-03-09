@@ -18,24 +18,6 @@ jobs:
     environment: auth-env
 
     steps:
-      - name: Debug secrets availability
-        run: |
-          if [ -z "${{ secrets.REGISTRY_USERNAME }}" ]; then
-            echo "REGISTRY_USERNAME is not set"
-          else
-            echo "REGISTRY_USERNAME is set"
-          fi
-          if [ -z "${{ secrets.REGISTRY_PASSWORD }}" ]; then
-            echo "REGISTRY_PASSWORD is not set"
-          else
-            echo "REGISTRY_PASSWORD is set"
-          fi
-
-      - name: Debug secrets
-        run: |
-          echo "Username: ${{ secrets.REGISTRY_USERNAME }}"
-          echo "Password: ${{ secrets.REGISTRY_PASSWORD }}"
-
       - name: Checkout master
         uses: actions/checkout@v3
 
@@ -57,6 +39,15 @@ jobs:
     needs: image-build-and-push
 
     steps:
+
+      - name: Debug secrets availability
+        run: |
+          if [ -z "${{ secrets.SSH_KEY }}" ]; then
+            echo "SSH_KEY is not set"
+          else
+            echo "SSH_KEY is set"
+          fi
+
       - name: Deploy to Selectel Cloud via SSH action
         uses: appleboy/ssh-action@v1.0.0
         with:

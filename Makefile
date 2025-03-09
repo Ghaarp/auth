@@ -20,10 +20,10 @@ generate-note-api:
 	api/auth_v1/auth.proto
 
 build:
-	GOOS=linux GOARCH=amd64 go build -o service_linux cmd/server/main.go
+	GOOS=linux GOARCH=amd64 go build -o auth_service cmd/server/main.go
 
 copy-to-server:
-	scp -v service_linux root@31.128.50.199:~
+	scp -v auth_service root@31.128.50.199:~
 
 docker-build-and-push:
 	docker buildx build --no-cache --platform linux/amd64 -t cr.selcloud.ru/f32f3g423w23efg32/auth-server:v0.0.1 .

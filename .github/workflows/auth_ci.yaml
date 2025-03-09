@@ -10,7 +10,7 @@ env:
   REGISTRY: "cr.selcloud.ru/f32f3g423w23efg32"
   IMAGE_NAME: "auth_service"
   CONTAINER_NAME: "auth_service-container"
-  PORT: 50051
+  PORT: 50053
 
 jobs:
   image-build-and-push:

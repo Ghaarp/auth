@@ -1,6 +1,6 @@
 module github.com/Ghaarp/auth
 
-go 1.23.3
+go 1.23.7
 
 require (
 	github.com/fatih/color v1.18.0

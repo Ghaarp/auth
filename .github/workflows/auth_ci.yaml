@@ -54,7 +54,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          envs: IMAGE_NAME,REGISTRY,GITHUB_SHA,CONTAINER_NAME
+          envs: IMAGE_NAME,REGISTRY,GITHUB_SHA,CONTAINER_NAME,PORT
 
           script: |
             # Set up variables
@@ -64,10 +64,10 @@ jobs:
             docker login -u ${{ secrets.REGISTRY_USERNAME }} -p ${{ secrets.REGISTRY_PASSWORD }} $REGISTRY
             
             # Stop running container
-            docker stop $CONTAINER_NAME
+            docker stop $CONTAINER_NAME || true
             
             # Remove old container
-            docker rm $CONTAINER_NAME
+            docker rm $CONTAINER_NAME || true
             
             # Run a new container from a new image
             docker run -d -p $PORT:$PORT --name $CONTAINER_NAME -t $REGISTRY/$IMAGE_NAME:$TAG_NAME

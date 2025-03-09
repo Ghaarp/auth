@@ -8,8 +8,8 @@ on:
 
 env:
   REGISTRY: "cr.selcloud.ru/f32f3g423w23efg32"
-  IMAGE_NAME: "linux_service"
-  CONTAINER_NAME: "linux_service-container"
+  IMAGE_NAME: "auth_service"
+  CONTAINER_NAME: "auth_service-container"
   PORT: 50051
 
 jobs:

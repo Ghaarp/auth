@@ -17,6 +17,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Debug secrets availability
+        run: |
+          if [ -z "${{ secrets.REGISTRY_USERNAME }}" ]; then
+            echo "REGISTRY_USERNAME is not set"
+          else
+            echo "REGISTRY_USERNAME is set"
+          fi
+          if [ -z "${{ secrets.REGISTRY_PASSWORD }}" ]; then
+            echo "REGISTRY_PASSWORD is not set"
+          else
+            echo "REGISTRY_PASSWORD is set"
+          fi
+          
       - name: Debug secrets
         run: |
           echo "Username: ${{ secrets.REGISTRY_USERNAME }}"

@@ -2,23 +2,26 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"flag"
 	"log"
 	"net"
 
+	"github.com/Ghaarp/auth/internal/config"
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
 	"github.com/brianvoe/gofakeit"
 	"github.com/fatih/color"
+	"github.com/jackc/pgx/v4/pgxpool"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const (
-	address = "localhost:"
-	port    = 50051
-)
+var configPath string
+
+func init() {
+	flag.StringVar(&configPath, "config-path", ".env", "path to config file")
+}
 
 type server struct {
 	generated.UnimplementedAuthV1Server
@@ -60,8 +63,37 @@ func (serv *server) Delete(context context.Context, in *generated.DeleteRequest)
 
 func main() {
 
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	flag.Parse()
+	ctx := context.Background()
 
+	err := config.Load(configPath)
+	if err != nil {
+		log.Print("Unable to load .env")
+	}
+
+	authConfig, err := config.NewAuthConfig()
+	if err != nil {
+		log.Fatal("Unable to load auth config")
+	}
+
+	dbconfig, err := config.NewDBConfig()
+	if err != nil {
+		log.Fatal("Unable to load DB config")
+	}
+
+	pool, err := pgxpool.Connect(ctx, dbconfig.DSN())
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+
+	turnOnServer(authConfig)
+
+}
+
+func turnOnServer(conf config.AuthConfig) {
+
+	listener, err := net.Listen("tcp", conf.Address())
 	if err != nil {
 		log.Fatal(err)
 	}

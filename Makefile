@@ -36,7 +36,7 @@ docker-build-and-push:
 run-local:
 	go run cmd/server/main.go -config-path="cloud.env"
 
-docker-run-local:
+run:
 	docker-compose --env-file docker.env up --build
 
 docker-run-local-noenv:

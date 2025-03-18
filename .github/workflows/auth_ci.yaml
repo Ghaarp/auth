@@ -20,7 +20,7 @@ jobs:
     environment: auth-env
 
     steps:
-      - name: Checkout master
+      - name: Checkout master 
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx

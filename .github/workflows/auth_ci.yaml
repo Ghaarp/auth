@@ -35,6 +35,10 @@ jobs:
 
           #docker buildx create --use
 
+          echo "Registry: $REGISTRY"
+          echo "Auth image: $REGISTRY/$AUTH_IMAGE_NAME:$TAG_NAME"
+          echo "Migrator image: $REGISTRY/$MIGRATOR_IMAGE_NAME:$TAG_NAME"
+
           docker buildx build --no-cache --push --tag $REGISTRY/$AUTH_IMAGE_NAME:$TAG_NAME -f auth_service.Dockerfile .
           docker buildx build --no-cache --push --tag $REGISTRY/$MIGRATOR_IMAGE_NAME:$TAG_NAME -f migrator.Dockerfile .
 

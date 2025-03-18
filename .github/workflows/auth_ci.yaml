@@ -60,6 +60,8 @@ jobs:
             AUTH_HOST, AUTH_PORT, MIGRATION_DIR
 
           script: |
+            git pull origin main
+
             # Set up variables
             TAG_NAME=$(echo $GITHUB_SHA | head -c7)
 
@@ -93,8 +95,8 @@ jobs:
             EOF
 
             # Refresh docker-compose.yml 
-            sed -i "s|$REGISTRY/$AUTH_IMAGE_NAME:.*|$REGISTRY/$AUTH_IMAGE_NAME:$TAG_NAME|" docker-compose.yaml
-            sed -i "s|$REGISTRY/$MIGRATOR_IMAGE_NAME:.*|$REGISTRY/$MIGRATOR_IMAGE_NAME:$TAG_NAME|" docker-compose.yaml
+            # sed -i "s|$REGISTRY/$AUTH_IMAGE_NAME:.*|$REGISTRY/$AUTH_IMAGE_NAME:$TAG_NAME|" docker-compose.yaml
+            # sed -i "s|$REGISTRY/$MIGRATOR_IMAGE_NAME:.*|$REGISTRY/$MIGRATOR_IMAGE_NAME:$TAG_NAME|" docker-compose.yaml
 
             # Run compose
             docker-compose down

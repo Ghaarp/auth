@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"net"
 	"os"
 )
 
@@ -21,7 +20,7 @@ type authConfig struct {
 }
 
 func (ac *authConfig) Address() string {
-	return net.JoinHostPort(ac.host, ac.port)
+	return fmt.Sprintf(":%s", ac.port)
 }
 
 func NewAuthConfig() (AuthConfig, error) {

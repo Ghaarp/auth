@@ -5,9 +5,11 @@ import (
 	"flag"
 	"log"
 	"net"
+	"time"
 
 	"github.com/Ghaarp/auth/internal/config"
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/brianvoe/gofakeit"
 	"github.com/fatih/color"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -25,12 +27,32 @@ func init() {
 
 type server struct {
 	generated.UnimplementedAuthV1Server
+	pool *pgxpool.Pool
 }
 
 func (serv *server) Create(context context.Context, in *generated.CreateRequest) (*generated.CreateResponse, error) {
-	log.Printf(color.GreenString("%v", in))
 
-	return &generated.CreateResponse{}, nil
+	builder := sq.Insert("users").PlaceholderFormat(sq.Dollar).
+		Columns("username", "email", "pass_hash", "user_role", "created_at", "updated_at").
+		Values(in.Name, in.Email, in.Password, in.Role, time.Now(), time.Now()).
+		Suffix("RETURNING id")
+
+	query, args, err := builder.ToSql()
+	if err != nil {
+		log.Fatal("Can't create query")
+	}
+
+	var userid int64
+	err = serv.pool.QueryRow(context, query, args...).Scan(&userid)
+	if err != nil {
+		log.Fatal("Failed to create new user")
+	}
+
+	log.Printf("Created new user: %d", userid)
+
+	return &generated.CreateResponse{
+		Id: userid,
+	}, nil
 }
 
 func (serv *server) Get(context context.Context, in *generated.GetRequest) (*generated.GetResponse, error) {
@@ -87,11 +109,11 @@ func main() {
 	}
 	defer pool.Close()
 
-	turnOnServer(authConfig)
+	turnOnServer(authConfig, pool)
 
 }
 
-func turnOnServer(conf config.AuthConfig) {
+func turnOnServer(conf config.AuthConfig, pool *pgxpool.Pool) {
 
 	listener, err := net.Listen("tcp", conf.Address())
 	if err != nil {
@@ -100,9 +122,9 @@ func turnOnServer(conf config.AuthConfig) {
 
 	serverObj := grpc.NewServer()
 	reflection.Register(serverObj)
-	a := &server{}
-	generated.RegisterAuthV1Server(serverObj, a)
-
+	serv := &server{}
+	generated.RegisterAuthV1Server(serverObj, serv)
+	serv.pool = pool
 	log.Printf("Server started on %v", listener.Addr())
 
 	if err := serverObj.Serve(listener); err != nil {

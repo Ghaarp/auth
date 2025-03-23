@@ -10,7 +10,6 @@ import (
 	"github.com/Ghaarp/auth/internal/config"
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/brianvoe/gofakeit"
 	"github.com/fatih/color"
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -56,16 +55,43 @@ func (serv *server) Create(context context.Context, in *generated.CreateRequest)
 }
 
 func (serv *server) Get(context context.Context, in *generated.GetRequest) (*generated.GetResponse, error) {
-	log.Printf(color.GreenString("%v", in))
+
+	qbuilderGet := sq.Select("id", "username", "email", "user_role", "created_at", "updated_at").
+		From("users").
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{"id": in.GetId()}).
+		Limit(1)
+
+	query, args, err := qbuilderGet.ToSql()
+	if err != nil {
+		log.Fatal("Can't create query")
+	}
+
+	var id int64
+	var name, email string
+	var role generated.Role
+	var created_at, updated_at time.Time
+
+	err = serv.pool.QueryRow(context, query, args...).Scan(&id, &name, &email, &role, &created_at, &updated_at)
+	if err != nil {
+		return &generated.GetResponse{
+			Id:        id,
+			Name:      name,
+			Email:     email,
+			Role:      role,
+			CreatedAt: timestamppb.New(created_at),
+			UpdatedAt: timestamppb.New(updated_at),
+		}, err
+	}
 
 	//return some random data for testing
 	res := &generated.GetResponse{
-		Id:        gofakeit.Int64(),
-		Name:      gofakeit.Name(),
-		Email:     gofakeit.Email(),
-		Role:      generated.Role_R_USER,
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
+		Id:        id,
+		Name:      name,
+		Email:     email,
+		Role:      role,
+		CreatedAt: timestamppb.New(created_at),
+		UpdatedAt: timestamppb.New(updated_at),
 	}
 
 	return res, nil

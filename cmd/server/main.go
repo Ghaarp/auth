@@ -37,13 +37,13 @@ func (serv *server) Create(context context.Context, in *generated.CreateRequest)
 
 	query, args, err := qbuilder.ToSql()
 	if err != nil {
-		log.Fatal("Can't create query")
+		return &generated.CreateResponse{}, err
 	}
 
 	var userid int64
 	err = serv.pool.QueryRow(context, query, args...).Scan(&userid)
 	if err != nil {
-		log.Fatal("Failed to create new user")
+		return &generated.CreateResponse{}, err
 	}
 
 	log.Printf("Created new user: %d", userid)
@@ -63,7 +63,7 @@ func (serv *server) Get(context context.Context, in *generated.GetRequest) (*gen
 
 	query, args, err := qbuilder.ToSql()
 	if err != nil {
-		log.Fatal("Can't create query")
+		return &generated.GetResponse{}, err
 	}
 
 	var id int64
@@ -73,17 +73,9 @@ func (serv *server) Get(context context.Context, in *generated.GetRequest) (*gen
 
 	err = serv.pool.QueryRow(context, query, args...).Scan(&id, &name, &email, &role, &created_at, &updated_at)
 	if err != nil {
-		return &generated.GetResponse{
-			Id:        id,
-			Name:      name,
-			Email:     email,
-			Role:      role,
-			CreatedAt: timestamppb.New(created_at),
-			UpdatedAt: timestamppb.New(updated_at),
-		}, err
+		return &generated.GetResponse{}, err
 	}
 
-	//return some random data for testing
 	res := &generated.GetResponse{
 		Id:        id,
 		Name:      name,
@@ -108,7 +100,7 @@ func (serv *server) Update(context context.Context, in *generated.UpdateRequest)
 
 	query, args, err := qbuilder.ToSql()
 	if err != nil {
-		log.Fatal("Can't create query")
+		return &generated.UpdateResponse{}, err
 	}
 
 	_, err = serv.pool.Query(context, query, args...)
@@ -127,7 +119,7 @@ func (serv *server) Delete(context context.Context, in *generated.DeleteRequest)
 
 	query, args, err := qbuilder.ToSql()
 	if err != nil {
-		log.Fatal("Can't create query")
+		return &generated.DeleteResponse{}, err
 	}
 
 	_, err = serv.pool.Query(context, query, args...)

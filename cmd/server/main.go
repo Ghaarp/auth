@@ -10,7 +10,6 @@ import (
 	"github.com/Ghaarp/auth/internal/config"
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/fatih/color"
 	"github.com/jackc/pgx/v4/pgxpool"
 
 	"google.golang.org/grpc"
@@ -31,12 +30,12 @@ type server struct {
 
 func (serv *server) Create(context context.Context, in *generated.CreateRequest) (*generated.CreateResponse, error) {
 
-	builder := sq.Insert("users").PlaceholderFormat(sq.Dollar).
+	qbuilder := sq.Insert("users").PlaceholderFormat(sq.Dollar).
 		Columns("username", "email", "pass_hash", "user_role", "created_at", "updated_at").
 		Values(in.Name, in.Email, in.Password, in.Role, time.Now(), time.Now()).
 		Suffix("RETURNING id")
 
-	query, args, err := builder.ToSql()
+	query, args, err := qbuilder.ToSql()
 	if err != nil {
 		log.Fatal("Can't create query")
 	}
@@ -56,13 +55,13 @@ func (serv *server) Create(context context.Context, in *generated.CreateRequest)
 
 func (serv *server) Get(context context.Context, in *generated.GetRequest) (*generated.GetResponse, error) {
 
-	qbuilderGet := sq.Select("id", "username", "email", "user_role", "created_at", "updated_at").
+	qbuilder := sq.Select("id", "username", "email", "user_role", "created_at", "updated_at").
 		From("users").
 		PlaceholderFormat(sq.Dollar).
 		Where(sq.Eq{"id": in.GetId()}).
 		Limit(1)
 
-	query, args, err := qbuilderGet.ToSql()
+	query, args, err := qbuilder.ToSql()
 	if err != nil {
 		log.Fatal("Can't create query")
 	}
@@ -98,13 +97,44 @@ func (serv *server) Get(context context.Context, in *generated.GetRequest) (*gen
 }
 
 func (serv *server) Update(context context.Context, in *generated.UpdateRequest) (*generated.UpdateResponse, error) {
-	log.Printf(color.GreenString("%v", in))
+
+	// Nullable values does not processing
+
+	qbuilder := sq.Update("users").
+		Set("username", in.Name.GetValue()).
+		Set("email", in.Email.GetValue()).
+		Where(sq.Eq{"id": in.Id}).
+		PlaceholderFormat(sq.Dollar)
+
+	query, args, err := qbuilder.ToSql()
+	if err != nil {
+		log.Fatal("Can't create query")
+	}
+
+	_, err = serv.pool.Query(context, query, args...)
+	if err != nil {
+		return &generated.UpdateResponse{}, err
+	}
 
 	return &generated.UpdateResponse{}, nil
 }
 
 func (serv *server) Delete(context context.Context, in *generated.DeleteRequest) (*generated.DeleteResponse, error) {
-	log.Printf(color.GreenString("%v", in))
+
+	qbuilder := sq.Delete("users").
+		PlaceholderFormat(sq.Dollar).
+		Where(sq.Eq{"id": in.GetId()})
+
+	query, args, err := qbuilder.ToSql()
+	if err != nil {
+		log.Fatal("Can't create query")
+	}
+
+	_, err = serv.pool.Query(context, query, args...)
+
+	if err != nil {
+		return &generated.DeleteResponse{}, err
+	}
 
 	return &generated.DeleteResponse{}, nil
 }

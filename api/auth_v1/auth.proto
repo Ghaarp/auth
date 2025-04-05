@@ -20,6 +20,21 @@ enum Role {
     R_USER = 1;
 }
 
+message PublicUser {
+    int64 id = 1;
+    string name = 2;
+    string email = 3;
+    Role role = 4;
+}
+
+message PrivateUser {
+    int64 id = 1;
+    string name = 2;
+    string email = 3;
+    string password = 4;
+    Role role = 5;
+}
+
 message CreateRequest {
     string name = 1;
     string email = 2;
@@ -41,8 +56,6 @@ message GetResponse {
     string name = 2;
     string email = 3;
     Role role = 4;
-    google.protobuf.Timestamp created_at = 5;
-    google.protobuf.Timestamp updated_at = 6;
 }
 
 message UpdateRequest {

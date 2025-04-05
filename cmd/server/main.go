@@ -5,16 +5,16 @@ import (
 	"flag"
 	"log"
 	"net"
-	"time"
 
 	"github.com/Ghaarp/auth/internal/config"
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
-	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/Ghaarp/auth/internal/repository"
+	repositoryInstance "github.com/Ghaarp/auth/internal/repository/auth"
+	"github.com/Ghaarp/auth/internal/repository/auth/converter"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var configPath string
@@ -25,110 +25,60 @@ func init() {
 
 type server struct {
 	generated.UnimplementedAuthV1Server
-	pool *pgxpool.Pool
+	Repository repository.AuthRepository
+	Converter  repository.RepoConverter
 }
 
-func (serv *server) Create(context context.Context, in *generated.CreateRequest) (*generated.CreateResponse, error) {
+func (serv *server) Create(ctx context.Context, in *generated.CreateRequest) (*generated.CreateResponse, error) {
 
-	qbuilder := sq.Insert("users").PlaceholderFormat(sq.Dollar).
-		Columns("username", "email", "pass_hash", "user_role", "created_at", "updated_at").
-		Values(in.Name, in.Email, in.Password, in.Role, time.Now(), time.Now()).
-		Suffix("RETURNING id")
-
-	query, args, err := qbuilder.ToSql()
-	if err != nil {
-		return &generated.CreateResponse{}, err
+	privateData := &generated.PrivateUser{
+		Name:     in.Name,
+		Email:    in.Email,
+		Password: in.Password,
+		Role:     in.Role,
 	}
 
-	var userid int64
-	err = serv.pool.QueryRow(context, query, args...).Scan(&userid)
-	if err != nil {
-		return &generated.CreateResponse{}, err
-	}
-
-	log.Printf("Created new user: %d", userid)
+	id, err := serv.Repository.Create(ctx, serv.Converter.ToRepoUserDataPrivate(privateData))
 
 	return &generated.CreateResponse{
-		Id: userid,
+		Id: id,
+	}, err
+}
+
+func (serv *server) Get(ctx context.Context, in *generated.GetRequest) (*generated.GetResponse, error) {
+
+	userData, err := serv.Repository.Get(ctx, in.Id)
+	if err != nil {
+		return &generated.GetResponse{}, err
+	}
+
+	userDataProto := serv.Converter.ToProtoUserDataPublic(userData)
+	return &generated.GetResponse{
+		Id:    userDataProto.Id,
+		Name:  userDataProto.Name,
+		Email: userDataProto.Email,
+		Role:  userDataProto.Role,
 	}, nil
 }
 
-func (serv *server) Get(context context.Context, in *generated.GetRequest) (*generated.GetResponse, error) {
+func (serv *server) Update(ctx context.Context, in *generated.UpdateRequest) (*generated.UpdateResponse, error) {
 
-	qbuilder := sq.Select("id", "username", "email", "user_role", "created_at", "updated_at").
-		From("users").
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": in.GetId()}).
-		Limit(1)
-
-	query, args, err := qbuilder.ToSql()
-	if err != nil {
-		return &generated.GetResponse{}, err
+	// Nullable values does not processing yet
+	userDataPublic := &generated.PublicUser{
+		Id:    in.Id,
+		Name:  in.Name.GetValue(),
+		Email: in.Email.GetValue(),
 	}
 
-	var id int64
-	var name, email string
-	var role generated.Role
-	var created_at, updated_at time.Time
+	err := serv.Repository.Update(ctx, serv.Converter.ToRepoUserDataPublic(userDataPublic))
 
-	err = serv.pool.QueryRow(context, query, args...).Scan(&id, &name, &email, &role, &created_at, &updated_at)
-	if err != nil {
-		return &generated.GetResponse{}, err
-	}
-
-	res := &generated.GetResponse{
-		Id:        id,
-		Name:      name,
-		Email:     email,
-		Role:      role,
-		CreatedAt: timestamppb.New(created_at),
-		UpdatedAt: timestamppb.New(updated_at),
-	}
-
-	return res, nil
+	return &generated.UpdateResponse{}, err
 }
 
-func (serv *server) Update(context context.Context, in *generated.UpdateRequest) (*generated.UpdateResponse, error) {
+func (serv *server) Delete(ctx context.Context, in *generated.DeleteRequest) (*generated.DeleteResponse, error) {
 
-	// Nullable values does not processing
-
-	qbuilder := sq.Update("users").
-		Set("username", in.Name.GetValue()).
-		Set("email", in.Email.GetValue()).
-		Where(sq.Eq{"id": in.Id}).
-		PlaceholderFormat(sq.Dollar)
-
-	query, args, err := qbuilder.ToSql()
-	if err != nil {
-		return &generated.UpdateResponse{}, err
-	}
-
-	_, err = serv.pool.Query(context, query, args...)
-	if err != nil {
-		return &generated.UpdateResponse{}, err
-	}
-
-	return &generated.UpdateResponse{}, nil
-}
-
-func (serv *server) Delete(context context.Context, in *generated.DeleteRequest) (*generated.DeleteResponse, error) {
-
-	qbuilder := sq.Delete("users").
-		PlaceholderFormat(sq.Dollar).
-		Where(sq.Eq{"id": in.GetId()})
-
-	query, args, err := qbuilder.ToSql()
-	if err != nil {
-		return &generated.DeleteResponse{}, err
-	}
-
-	_, err = serv.pool.Query(context, query, args...)
-
-	if err != nil {
-		return &generated.DeleteResponse{}, err
-	}
-
-	return &generated.DeleteResponse{}, nil
+	err := serv.Repository.Delete(ctx, in.Id)
+	return &generated.DeleteResponse{}, err
 }
 
 func main() {
@@ -146,22 +96,17 @@ func main() {
 		log.Fatal("Unable to load auth config")
 	}
 
-	dbconfig, err := config.NewDBConfig()
+	serv := &server{}
+	addRepositoryLayer(serv, ctx)
 	if err != nil {
-		log.Fatal("Unable to load DB config")
+		log.Fatal("Unable to connect to DB")
 	}
 
-	pool, err := pgxpool.Connect(ctx, dbconfig.DSN())
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-	defer pool.Close()
-
-	turnOnServer(authConfig, pool)
-
+	defer serv.Repository.ClosePool(ctx)
+	turnOnServer(serv, authConfig)
 }
 
-func turnOnServer(conf config.AuthConfig, pool *pgxpool.Pool) {
+func turnOnServer(serv *server, conf config.AuthConfig) {
 
 	listener, err := net.Listen("tcp", conf.Address())
 	if err != nil {
@@ -170,13 +115,27 @@ func turnOnServer(conf config.AuthConfig, pool *pgxpool.Pool) {
 
 	serverObj := grpc.NewServer()
 	reflection.Register(serverObj)
-	serv := &server{}
 	generated.RegisterAuthV1Server(serverObj, serv)
-	serv.pool = pool
 	log.Printf("Server started on %v", listener.Addr())
 
 	if err := serverObj.Serve(listener); err != nil {
 		log.Fatal(err)
 	}
 
+}
+
+func addRepositoryLayer(serv *server, ctx context.Context) error {
+
+	dbconfig, err := config.NewDBConfig()
+	if err != nil {
+		log.Fatal("Unable to load DB config")
+	}
+
+	serv.Repository, err = repositoryInstance.CreateRepository(ctx, dbconfig.DSN())
+	if err != nil {
+		return err
+	}
+
+	serv.Converter = &converter.AuthConverter{}
+	return nil
 }

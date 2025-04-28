@@ -20,7 +20,7 @@ generate-note-api:
 	api/auth_v1/auth.proto
 
 build:
-	GOOS=linux GOARCH=amd64 go build -o auth_service cmd/server/main.go
+	GOOS=linux GOARCH=amd64 go build -o auth_service cmd/server
 
 copy-to-server:
 	scp -v auth_service root@31.128.50.199:~

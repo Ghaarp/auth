@@ -1,16 +1,20 @@
 package converter
 
 import (
-	repo "github.com/Ghaarp/auth/internal/repository/auth/model"
-	generated "github.com/Ghaarp/auth/pkg/auth_v1"
+	repoModel "github.com/Ghaarp/auth/internal/repository/auth/model"
+	serviceModel "github.com/Ghaarp/auth/internal/service/auth/model"
 )
 
 type AuthConverter struct {
 }
 
-func (conv *AuthConverter) ToRepoUserDataPrivate(src *generated.PrivateUser) *repo.UserDataPrivate {
+func CreateConverter() *AuthConverter {
+	return &AuthConverter{}
+}
 
-	return &repo.UserDataPrivate{
+func (conv *AuthConverter) ToRepoUserDataPrivate(src *serviceModel.UserDataPrivate) *repoModel.UserDataPrivate {
+
+	return &repoModel.UserDataPrivate{
 		Name:     src.Name,
 		Email:    src.Email,
 		Password: src.Password,
@@ -19,27 +23,23 @@ func (conv *AuthConverter) ToRepoUserDataPrivate(src *generated.PrivateUser) *re
 
 }
 
-func (conv *AuthConverter) ToRepoUserDataPublic(src *generated.PublicUser) (res *repo.UserDataPublic) {
+func (conv *AuthConverter) ToRepoUserDataPublic(src *serviceModel.UserDataPublic) *repoModel.UserDataPublic {
 
-	res = &repo.UserDataPublic{}
-	res.Id = src.Id
-	res.Name.Valid = len(src.Name) == 0
-	res.Name.String = src.Name
-	res.Email.Valid = len(src.Email) == 0
-	res.Email.String = src.Email
-	res.Role = int64(src.Role)
-
-	return
-
+	return &repoModel.UserDataPublic{
+		Id:    src.Id,
+		Name:  src.Name,
+		Email: src.Email,
+		Role:  src.Role,
+	}
 }
 
-func (conv *AuthConverter) ToProtoUserDataPublic(src *repo.UserDataPublic) *generated.PublicUser {
+func (conv *AuthConverter) ToServiceUserDataPublic(src *repoModel.UserDataPublic) *serviceModel.UserDataPublic {
 
-	return &generated.PublicUser{
+	return &serviceModel.UserDataPublic{
 		Id:    src.Id,
-		Name:  src.Name.String,
-		Email: src.Email.String,
-		Role:  generated.Role(src.Role),
+		Name:  src.Name,
+		Email: src.Email,
+		Role:  src.Role,
 	}
 
 }

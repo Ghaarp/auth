@@ -4,7 +4,7 @@ COPY . /github.com/Ghaarp/auth/cmd
 WORKDIR /github.com/Ghaarp/auth/cmd
 
 RUN go mod download
-RUN go build -o ./bin/auth_service cmd/server/main.go
+RUN go build -o ./bin/auth_service ./cmd/server
 
 FROM alpine:latest
 

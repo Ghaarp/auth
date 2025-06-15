@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -12,6 +12,8 @@ import (
 
 	serviceDef "github.com/Ghaarp/auth/internal/service"
 	authService "github.com/Ghaarp/auth/internal/service/auth"
+
+	authImplementation "github.com/Ghaarp/auth/internal/api/auth"
 )
 
 type serviceProvider struct {
@@ -21,11 +23,19 @@ type serviceProvider struct {
 	repository          repositoryDef.AuthRepository
 	repositoryConverter repositoryDef.RepoConverter
 
-	service serviceDef.AuthService
+	service  serviceDef.AuthService
+	authImpl *authImplementation.AuthImplementation
 }
 
 func newServiceProvider() *serviceProvider {
 	return &serviceProvider{}
+}
+
+func (sp *serviceProvider) AuthImplementation(ctx context.Context) *authImplementation.AuthImplementation {
+	if sp.authImpl == nil {
+		sp.authImpl = authImplementation.NewAuthImplementation(sp.Service(ctx))
+	}
+	return sp.authImpl
 }
 
 func (sp *serviceProvider) DBConfig() configDef.DBConfig {

@@ -127,5 +127,7 @@ func (rep *repo) openPool(ctx context.Context, dsn string) error {
 }
 
 func (rep *repo) ClosePool(ctx context.Context) {
-	rep.pool.Close()
+	if rep.pool != nil {
+		rep.pool.Close()
+	}
 }

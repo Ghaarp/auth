@@ -7,7 +7,7 @@ import (
 )
 
 func (auth *AuthImplementation) Update(ctx context.Context, req *generated.UpdateRequest) (*generated.UpdateResponse, error) {
-	publicUser := auth.serviceConverter.ToPublicUser(req)
+	publicUser := auth.serviceConverter.ToProtoPublicUser(req)
 	publicUserService := auth.serviceConverter.ToServiceUserDataPublic(publicUser)
 	err := auth.authService.Update(ctx, publicUserService)
 	if err != nil {

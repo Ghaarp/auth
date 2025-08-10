@@ -1,9 +1,5 @@
 package model
 
-import (
-	"database/sql"
-)
-
 type UserDataPrivate struct {
 	Name     string
 	Email    string
@@ -13,7 +9,7 @@ type UserDataPrivate struct {
 
 type UserDataPublic struct {
 	Id    int64
-	Name  sql.NullString
-	Email sql.NullString
+	Name  string
+	Email string
 	Role  int64
 }

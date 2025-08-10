@@ -12,5 +12,5 @@ func (auth *AuthImplementation) Get(ctx context.Context, req *generated.GetReque
 		return nil, err
 	}
 
-	return auth.serviceConverter.ToGetResponse(publicUser), nil
+	return auth.serviceConverter.ToProtoGetResponse(publicUser), nil
 }

@@ -9,7 +9,7 @@ type ServiceConverter interface {
 	ToServiceUserDataPrivate(src *generated.PrivateUser) *model.UserDataPrivate
 	ToServiceUserDataPublic(src *generated.PublicUser) *model.UserDataPublic
 	ToProtoUserDataPublic(src *model.UserDataPublic) *generated.PublicUser
-	ToApiUserDataPrivate(data *generated.CreateRequest) *generated.PrivateUser
-	ToGetResponse(data *model.UserDataPublic) *generated.GetResponse
-	ToPublicUser(data *generated.UpdateRequest) *generated.PublicUser
+	ToProtoUserDataPrivate(data *generated.CreateRequest) *generated.PrivateUser
+	ToProtoGetResponse(data *model.UserDataPublic) *generated.GetResponse
+	ToProtoPublicUser(data *generated.UpdateRequest) *generated.PublicUser
 }

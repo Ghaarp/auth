@@ -7,7 +7,7 @@ import (
 )
 
 func (auth *AuthImplementation) Create(ctx context.Context, req *generated.CreateRequest) (*generated.CreateResponse, error) {
-	privateUser := auth.serviceConverter.ToApiUserDataPrivate(req)
+	privateUser := auth.serviceConverter.ToProtoUserDataPrivate(req)
 	id, err := auth.authService.Create(ctx, auth.serviceConverter.ToServiceUserDataPrivate(privateUser))
 	if err != nil {
 		return nil, err

@@ -41,3 +41,9 @@ run:
 
 docker-run-local-noenv:
 	docker-compose up --build
+
+minimock-generate:
+	go generate ./...
+
+test-all:
+	go test ./...

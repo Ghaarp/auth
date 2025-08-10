@@ -25,20 +25,25 @@ func (conv *AuthConverter) ToRepoUserDataPrivate(src *serviceModel.UserDataPriva
 
 func (conv *AuthConverter) ToRepoUserDataPublic(src *serviceModel.UserDataPublic) *repoModel.UserDataPublic {
 
-	return &repoModel.UserDataPublic{
-		Id:    src.Id,
-		Name:  src.Name,
-		Email: src.Email,
-		Role:  src.Role,
+	res := &repoModel.UserDataPublic{
+		Id:   src.Id,
+		Role: src.Role,
 	}
+
+	res.Name.Valid = len(src.Name) != 0
+	res.Name.String = src.Name
+	res.Email.Valid = len(src.Email) != 0
+	res.Email.String = src.Email
+
+	return res
 }
 
 func (conv *AuthConverter) ToServiceUserDataPublic(src *repoModel.UserDataPublic) *serviceModel.UserDataPublic {
 
 	return &serviceModel.UserDataPublic{
 		Id:    src.Id,
-		Name:  src.Name,
-		Email: src.Email,
+		Name:  src.Name.String,
+		Email: src.Email.String,
 		Role:  src.Role,
 	}
 

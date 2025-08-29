@@ -6,31 +6,31 @@ import (
 )
 
 const (
-	grpcHostEnvName = "HOST"
-	grpcPortEnvName = "AUTH_PORT"
+	httpHostEnvName = "HOST"
+	httpPortEnvName = "HTTP_PORT"
 )
 
-type grpcConfig struct {
+type httpConfig struct {
 	host string
 	port string
 }
 
-func (ac *grpcConfig) Address() string {
+func (ac *httpConfig) Address() string {
 	return fmt.Sprintf("%s:%s", "", ac.port)
 }
 
-func NewAuthConfig() (Config, error) {
-	host := os.Getenv(grpcHostEnvName)
+func NewHttpConfig() (Config, error) {
+	host := os.Getenv(httpHostEnvName)
 	if len(host) == 0 {
 		return nil, fmt.Errorf("No host name in .env")
 	}
 
-	port := os.Getenv(grpcPortEnvName)
+	port := os.Getenv(httpPortEnvName)
 	if len(port) == 0 {
 		return nil, fmt.Errorf("No port in .env")
 	}
 
-	config := grpcConfig{
+	config := httpConfig{
 		host: host,
 		port: port,
 	}

@@ -13,6 +13,7 @@ services:
       - db
     ports:
       - "${AUTH_PORT}:${AUTH_PORT}"
+      - "${HTTP_PORT}:${HTTP_PORT}"
 
   migrator:
     build:

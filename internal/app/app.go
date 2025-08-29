@@ -5,23 +5,23 @@ import (
 	"flag"
 	"log"
 	"net"
+	"net/http"
+	"sync"
 
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
-
-var configPath string
-
-func init() {
-	flag.StringVar(&configPath, "config-path", ".env", "path to config file")
-}
 
 type App struct {
 	generated.UnimplementedAuthV1Server
 	serviceProvider *serviceProvider
 	server          *grpc.Server
+	httpServer      *http.Server
 	ctx             context.Context
 }
 
@@ -35,12 +35,34 @@ func NewApp(ctx context.Context) (*App, error) {
 }
 
 func (app *App) Run() error {
-	defer func() {
-		app.serviceProvider.service.StopService(app.ctx)
-		app.server.Stop()
-	}()
 
-	return app.runGRPCServer()
+	defer app.StopServices()
+	return app.RunServices()
+
+}
+
+func (app *App) RunServices() error {
+
+	starters := []func(*sync.WaitGroup){
+		app.runGRPCServer,
+		app.runHttpServer,
+	}
+
+	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(len(starters))
+
+	for _, starter := range starters {
+		go starter(&waitGroup)
+	}
+
+	waitGroup.Wait()
+	return nil
+
+}
+
+func (app *App) StopServices() {
+	app.serviceProvider.service.StopService(app.ctx)
+	app.server.Stop()
 }
 
 func (app *App) initDeps(ctx context.Context) error {
@@ -50,6 +72,7 @@ func (app *App) initDeps(ctx context.Context) error {
 		app.initConfig,
 		app.initServiceProvider,
 		app.initGRPCServer,
+		app.initHttpServer,
 	}
 
 	for _, f := range inits {
@@ -84,17 +107,64 @@ func (app *App) initGRPCServer(ctx context.Context) error {
 	return nil
 }
 
-func (app *App) runGRPCServer() error {
+func (app *App) initHttpServer(ctx context.Context) error {
 
-	listener, err := net.Listen("tcp", app.serviceProvider.ServerConfig(configPath).Address())
+	mux := runtime.NewServeMux()
+
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	err := generated.RegisterAuthV1HandlerFromEndpoint(ctx, mux, app.serviceProvider.GRPCConfig().Address(), opts)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
-	log.Printf("Server started on %v", listener.Addr())
+	corsMiddleware := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type", "Content-Length", "Authorization"},
+		AllowCredentials: true,
+	})
 
-	if err := app.server.Serve(listener); err != nil {
-		log.Fatal(err)
+	app.httpServer = &http.Server{
+		Addr:    app.serviceProvider.HttpConfig().Address(),
+		Handler: corsMiddleware.Handler(mux),
 	}
+
 	return nil
+
+}
+
+func (app *App) runGRPCServer(group *sync.WaitGroup) {
+
+	defer group.Done()
+
+	address := app.serviceProvider.GRPCConfig().Address()
+	log.Printf("Server started on %v", address)
+
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	err = app.server.Serve(listener)
+	if err != nil {
+		log.Print(err)
+	}
+}
+
+func (app *App) runHttpServer(group *sync.WaitGroup) {
+
+	defer group.Done()
+
+	log.Printf("HTTP server is running on %s", app.serviceProvider.HttpConfig().Address())
+
+	err := app.httpServer.ListenAndServe()
+
+	if err != nil {
+		log.Print(err)
+	}
+
 }

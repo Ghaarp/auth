@@ -60,7 +60,7 @@ func (sp *serviceProvider) DBConfig() configDef.DBConfig {
 
 func (sp *serviceProvider) GRPCConfig() configDef.Config {
 	if sp.grpcConfig == nil {
-		cfg, err := configDef.NewAuthConfig()
+		cfg, err := configDef.NewGrpcConfig()
 		if err != nil {
 			panic(err)
 		}

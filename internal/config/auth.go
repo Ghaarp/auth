@@ -7,7 +7,7 @@ import (
 
 const (
 	grpcHostEnvName = "HOST"
-	grpcPortEnvName = "AUTH_PORT"
+	grpcPortEnvName = "GRPC_PORT"
 )
 
 type grpcConfig struct {
@@ -19,7 +19,7 @@ func (ac *grpcConfig) Address() string {
 	return fmt.Sprintf("%s:%s", "", ac.port)
 }
 
-func NewAuthConfig() (Config, error) {
+func NewGrpcConfig() (Config, error) {
 	host := os.Getenv(grpcHostEnvName)
 	if len(host) == 0 {
 		return nil, fmt.Errorf("No host name in .env")

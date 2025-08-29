@@ -12,7 +12,7 @@ services:
     depends_on:
       - db
     ports:
-      - "${AUTH_PORT}:${AUTH_PORT}"
+      - "${GRPC_PORT}:${GRPC_PORT}"
       - "${HTTP_PORT}:${HTTP_PORT}"
 
   migrator:

@@ -12,23 +12,23 @@ get-deps:
 	go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
 
 generate:
-	@if [ ! -d googleapis ]; then \
-		get-google-api
-	fi
+	make vendor-proto	
 	make generate-auth-api
 
 generate-auth-api:
 	mkdir -p pkg/auth_v1
 	protoc \
 	--proto_path api/auth_v1 \
-	--proto_path googleapis \
+	--proto_path vendor.protogen \
 	--go_out=pkg/auth_v1 --go_opt=paths=source_relative \
 	--go-grpc_out=pkg/auth_v1 --go-grpc_opt=paths=source_relative \
 	--grpc-gateway_out=pkg/auth_v1 --grpc-gateway_opt=paths=source_relative \
 	api/auth_v1/auth.proto
 
 get-google-api:
-	git submodule add https://github.com/googleapis/googleapis
+	@if [ ! -d googleapis ]; then \
+		git submodule add https://github.com/googleapis/googleapis
+	fi
 
 vendor-proto:
 	@if [ ! -d vendor.protogen/google ]; then \

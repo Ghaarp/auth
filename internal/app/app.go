@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/Ghaarp/auth/internal/interceptor"
+
 	generated "github.com/Ghaarp/auth/pkg/auth_v1"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
@@ -101,7 +103,7 @@ func (app *App) initServiceProvider(_ context.Context) error {
 }
 
 func (app *App) initGRPCServer(ctx context.Context) error {
-	app.server = grpc.NewServer()
+	app.server = grpc.NewServer(grpc.UnaryInterceptor(interceptor.ValidateInterceptor))
 	reflection.Register(app.server)
 	generated.RegisterAuthV1Server(app.server, app.serviceProvider.AuthImplementation(ctx))
 	return nil

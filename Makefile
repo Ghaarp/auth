@@ -5,11 +5,13 @@ install-deps:
 	GOBIN=$(LOCAL_BIN) go install -mod=mod google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 	GOBIN=$(LOCAL_BIN) go install github.com/pressly/goose/v3/cmd/goose@v3.20.0
 	GOBIN=$(LOCAL_BIN) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.20.0
+	GOBIN=$(LOCAL_BIN) go install github.com/envoyproxy/protoc-gen-validate@latest
 
 get-deps:
 	go get -u google.golang.org/protobuf/cmd/protoc-gen-go
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
+	go get -u github.com/envoyproxy/protoc-gen-validate
 
 generate:
 	make vendor-proto	
@@ -23,6 +25,7 @@ generate-auth-api:
 	--go_out=pkg/auth_v1 --go_opt=paths=source_relative \
 	--go-grpc_out=pkg/auth_v1 --go-grpc_opt=paths=source_relative \
 	--grpc-gateway_out=pkg/auth_v1 --grpc-gateway_opt=paths=source_relative \
+	--validate_out lang=go:pkg/auth_v1 --validate_opt=paths=source_relative \
 	api/auth_v1/auth.proto
 
 get-google-api:
@@ -36,6 +39,12 @@ vendor-proto:
 		mkdir -p  vendor.protogen/google/ &&\
 		mv vendor.protogen/googleapis/google/api vendor.protogen/google &&\
 		rm -rf vendor.protogen/googleapis ;\
+	fi
+	@if [ ! -d vendor.protogen/validate ]; then \
+		mkdir -p vendor.protogen/validate &&\
+		git clone https://github.com/envoyproxy/protoc-gen-validate vendor.protogen/protoc-gen-validate &&\
+		mv vendor.protogen/protoc-gen-validate/validate/*.proto vendor.protogen/validate &&\
+		rm -rf vendor.protogen/protoc-gen-validate ;\
 	fi
 
 build:

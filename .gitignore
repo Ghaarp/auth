@@ -3,3 +3,4 @@ root@31.128.50.199
 .github/workflows/auth_ci.yaml
 googleapis
 vendor.protogen
+bin

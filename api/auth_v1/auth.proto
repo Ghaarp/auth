@@ -4,6 +4,7 @@ package auth_v1;
 
 import "google/protobuf/wrappers.proto";
 import "google/api/annotations.proto";
+import "validate/validate.proto";
 
 option go_package = "github.com/Ghaarp/auth/api/auth_v1;auth_v1";
 
@@ -58,7 +59,7 @@ message PrivateUser {
 }
 
 message CreateRequest {
-    string name = 1;
+    string name = 1 [(validate.rules).string = {min_len: 1, max_len: 5}];
     string email = 2;
     string password = 3;
     string password_confirm = 4;
